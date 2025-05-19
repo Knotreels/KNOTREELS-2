@@ -9,9 +9,10 @@ import { useRouter } from 'next/navigation';
 interface BuyButtonProps {
   postId: string;
   price: number;
+  onPurchased?: () => void;
 }
 
-export default function BuyButton({ postId, price }: BuyButtonProps) {
+export default function BuyButton({ postId, price, onPurchased }: BuyButtonProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -27,6 +28,15 @@ export default function BuyButton({ postId, price }: BuyButtonProps) {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       const userSnap = await getDoc(userRef);
       const user = userSnap.data();
+
+      // Prevent repurchase if already owned
+      const purchaseRef = doc(db, 'users', auth.currentUser.uid, 'purchases', postId);
+      const purchaseSnap = await getDoc(purchaseRef);
+      if (purchaseSnap.exists()) {
+        toast({ title: 'Already purchased.' });
+        onPurchased?.();
+        return;
+      }
 
       if (!user || user.credits < price) {
         toast({ title: 'Not enough credits.', variant: 'destructive' });
@@ -45,6 +55,7 @@ export default function BuyButton({ postId, price }: BuyButtonProps) {
       });
 
       toast({ title: 'Purchase successful! 🎉' });
+      onPurchased?.();
       router.refresh(); // In case you want to update UI
 
     } catch (err) {
