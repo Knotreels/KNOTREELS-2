@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import Stripe from 'stripe';
+import serviceAccount from '@/firebase/serviceAccount.json'; // ✅ Make sure this file exists
 
 // ✅ Initialize Firebase Admin (only once)
 if (!getApps().length) {
   initializeApp({
-    credential: cert({
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
+    credential: cert(serviceAccount as any),
   });
 }
 
@@ -33,7 +30,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid bundle selected' }, { status: 400 });
     }
 
-    // ✅ Strongly typed Stripe session config
     const sessionParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ['card'],
       line_items: [
@@ -58,7 +54,6 @@ export async function POST(req: NextRequest) {
     };
 
     const session = await stripe.checkout.sessions.create(sessionParams);
-
     return NextResponse.json({ url: session.url });
   } catch (err) {
     console.error('[CHECKOUT_SESSION_ERROR]', err);
