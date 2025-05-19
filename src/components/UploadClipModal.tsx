@@ -92,7 +92,7 @@ export default function UploadClipModal({
         return;
       }
 
-      const priceInCredits = parseInt(data.price || '0', 10);
+      const priceInCredits = parseInt(data.price || '0', 10) || 0;
       const listing = {
         title: data.title.trim(),
         description: data.description.trim(),
