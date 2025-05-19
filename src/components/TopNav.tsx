@@ -6,17 +6,10 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/firebase/config';
-import rawNavItems from './Sidebar.tsx'; // Ensure rawNavItems is correctly typed or transformed
+import { navSections } from './navItems';
 
-// Transform rawNavItems to match NavItem[] if necessary
-const navItems: NavItem[] = Array.isArray(rawNavItems)
-  ? rawNavItems.map(item => ({
-      label: item.label,
-      icon: item.icon,
-      href: item.href,
-      external: item.external || false,
-    }))
-  : [];
+// Flatten sections into a single array of items for the mobile nav
+const navItems: NavItem[] = navSections.flatMap(section => section.items);
 
 interface NavItem {
   label: string;

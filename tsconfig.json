@@ -34,8 +34,9 @@
       ".next/types/**/*.ts",
       "build/types/**/*.ts",
       "next-env.d.ts",
-      "out/types/**/*.ts"
-, "src/components/Sidebar.tsx"    ],
+      "out/types/**/*.ts",
+      "src/components/Sidebar.tsx"
+    ],
     "exclude": [
       "node_modules"
     ]
