@@ -86,7 +86,7 @@ export default function ShopPage() {
                   <div className="flex items-center justify-between mt-2">
                     <span className="flex items-center gap-1 text-blue-400 font-semibold">
                       <FaDollarSign className="text-sm" />
-                      {item.price} credits
+                      {item.price && item.price > 0 ? `${item.price} credits` : 'Free'}
                     </span>
                     <button className="bg-blue-600 text-sm text-white px-4 py-1.5 rounded hover:bg-blue-700 transition">
                       Buy

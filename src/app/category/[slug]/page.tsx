@@ -51,6 +51,9 @@ export default function CategoryPage() {
               <div className="p-3 text-white">
                 <div className="font-semibold">{clip.title}</div>
                 <div className="text-xs text-gray-400">creator: {clip.username}</div>
+                <p className="text-sm mt-1">
+                  {clip.price && clip.price > 0 ? `${clip.price} credits` : 'Free'}
+                </p>
                 <div className="flex items-center gap-4 mt-2 text-gray-300 text-xs">
                   <FaEye /> {clip.views || 0}
                   <FaDollarSign /> ${clip.tips?.toFixed(2)||'0.00'}
