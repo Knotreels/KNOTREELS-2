@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import Stripe from 'stripe';
-import serviceAccount from '@/firebase/serviceAccount.json'; // ✅ Make sure this file exists
 
-// ✅ Initialize Firebase Admin (only once)
+// ✅ Initialize Firebase Admin securely using GOOGLE_CREDENTIALS_JSON
 if (!getApps().length) {
+  const serviceAccount = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON!);
   initializeApp({
-    credential: cert(serviceAccount as any),
+    credential: cert(serviceAccount),
   });
 }
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-03-31.basil', // use a stable version string
+  apiVersion: '2025-03-31.basil',
 });
 
 export async function POST(req: NextRequest) {
