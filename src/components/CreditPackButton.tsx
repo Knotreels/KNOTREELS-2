@@ -20,7 +20,7 @@ export default function CreditPackButton({ amount }: { amount: number }) {
     });
 
     const { url } = await res.json();
-    router.push(url);
+    window.location.href = url;
   };
 
   return (
