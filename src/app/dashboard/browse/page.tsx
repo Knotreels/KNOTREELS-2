@@ -31,7 +31,6 @@ export default function BrowsePage() {
       if (user) {
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
-
         if (userDoc.exists()) {
           const userData = userDoc.data();
           if (userData?.avatar) {
@@ -43,6 +42,15 @@ export default function BrowsePage() {
 
     return () => unsubscribe();
   }, []);
+
+  // 🔥 Add this guard
+  if (boosted.length === 0) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+        <p className="text-xl font-semibold animate-pulse">Loading your dashboard...</p>
+      </div>
+    );
+  }
 
   return (
     <>
