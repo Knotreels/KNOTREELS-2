@@ -14,13 +14,18 @@ import { getBoostedCreators } from '@/lib/fetchBoostedCreators';
 import { CATEGORIES } from '@/lib/constants';
 
 export default function BrowsePage() {
-  const [boosted, setBoosted] = useState<any[]>([]);
+  const [boosted, setBoosted] = useState<any[] | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBoosted = async () => {
-      const creators = await getBoostedCreators();
-      setBoosted(creators);
+      try {
+        const creators = await getBoostedCreators();
+        setBoosted(creators);
+      } catch (err) {
+        console.error('Failed to fetch boosted creators:', err);
+        setBoosted([]);
+      }
     };
 
     fetchBoosted();
@@ -43,10 +48,10 @@ export default function BrowsePage() {
     return () => unsubscribe();
   }, []);
 
-  // 🔥 Add this guard
-  if (boosted.length === 0) {
+  // ⏳ Show loading screen until boosted is ready
+  if (boosted === null) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <p className="text-xl font-semibold animate-pulse">Loading your dashboard...</p>
       </div>
     );
@@ -56,10 +61,7 @@ export default function BrowsePage() {
     <>
       {/* 👤 Profile Avatar (top right) */}
       {avatarUrl && (
-        <Link
-          href="/dashboard/profiles"
-          className="absolute top-6 right-6 z-30"
-        >
+        <Link href="/dashboard/profiles" className="absolute top-6 right-6 z-30">
           <Image
             src={avatarUrl || '/default-avatar.png'}
             alt="Profile"
