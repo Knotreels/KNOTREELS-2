@@ -3,7 +3,8 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import BuyCredits from '@/components/BuyCredits';
+import { Button } from '@/components/ui/button';
+import { useState } from 'react';
 import Image from 'next/image';
 
 const CREDIT_BUNDLES = [
@@ -16,6 +17,30 @@ const CREDIT_BUNDLES = [
 export default function BuyCreditsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [loadingBundle, setLoadingBundle] = useState<string | null>(null);
+
+  const handlePurchase = async (bundle: string) => {
+    if (!user) return;
+
+    setLoadingBundle(bundle);
+    try {
+      const res = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.uid, bundle }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Checkout error:', err);
+      alert('Something went wrong. Try again.');
+    } finally {
+      setLoadingBundle(null);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !user) {
@@ -64,7 +89,15 @@ export default function BuyCreditsPage() {
               £{(price / Number(amount)).toFixed(2)} per credit
             </p>
             <p className="text-lg font-medium mb-4">£{price.toFixed(2)}</p>
-            <BuyCredits bundle={amount} />
+            <Button
+              onClick={() => handlePurchase(amount)}
+              disabled={loadingBundle === amount}
+              className="w-full"
+            >
+              {loadingBundle === amount
+                ? 'Redirecting...'
+                : `Buy ${amount} Credits`}
+            </Button>
           </div>
         ))}
       </div>
