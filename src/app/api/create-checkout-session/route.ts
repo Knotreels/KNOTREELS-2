@@ -5,7 +5,6 @@ import Stripe from 'stripe';
 // ✅ Initialize Firebase Admin securely using GOOGLE_CREDENTIALS_JSON
   const raw = process.env.GOOGLE_CREDENTIALS_JSON;
 
-console.log('[CHECKOUT] Raw GOOGLE_CREDENTIALS_JSON:', raw?.slice(0, 50));
 
 if (!raw) {
   throw new Error('GOOGLE_CREDENTIALS_JSON is undefined');
