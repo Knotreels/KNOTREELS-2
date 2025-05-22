@@ -45,14 +45,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const data = docSnap.data();
           setUser({
             ...firebaseUser,
-            username: data.username,
-            avatar: data.avatar,
-            role: data.role,
-            tips: data.tips,
-            boosts: data.boosts,
-            credits: data.credits,
+            username: data.username || 'Unnamed',
+            avatar: data.avatar || '/default-avatar.png',
+            role: data.role || 'Viewer',
+            tips: data.tips ?? 0,
+            boosts: data.boosts ?? 0,
+            credits: data.credits ?? 0,
             bio: data.bio || '',
           });
+          
           setLoading(false); // ✅ Set loading false after data received
         });
         
