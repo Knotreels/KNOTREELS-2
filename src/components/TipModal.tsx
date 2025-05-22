@@ -1,85 +1,95 @@
-// src/components/TipModal.tsx
 'use client';
 
 import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
-import { toast } from '@/hooks/use-toast';
 import { Button } from './ui/button';
+import { auth } from '@/firebase/config';
 
-export function TipModal({ creatorId, username }: { creatorId: string; username: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [amount, setAmount] = useState(500);
+interface TipModalProps {
+  imageId: string;
+  creatorId: string;
+  onClose(): void;
+}
+
+export default function TipModal({ imageId, creatorId, onClose }: TipModalProps) {
+  const [amount, setAmount] = useState<number>(1);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const sendTip = async () => {
-    setLoading(true);
+  const handleTip = async () => {
+    const tipperId = auth.currentUser?.uid;
+
+    if (!tipperId || !imageId || !creatorId || isNaN(amount) || amount < 1) {
+      setMessage({ type: 'error', text: 'Missing info or invalid credit amount.' });
+      return;
+    }
+
     try {
+      setLoading(true);
+      setMessage(null);
+
       const res = await fetch('/api/tip', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ amount, creatorId }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipperId,
+          creatorId,
+          imageId,
+          credits: amount,
+        }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.url) {
-        toast({
-          title: 'Tip failed',
-          description: data.error || 'Could not start payment.',
-        });
-      } else {
-        window.location.href = data.url;
-      }
-    } catch (e) {
-      toast({ title: 'Network error', description: 'Could not reach server.' });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to tip');
+
+      setMessage({ type: 'success', text: 'Thanks for tipping!' });
+
+      // Optionally auto-close after a delay
+      setTimeout(() => {
+        setMessage(null);
+        onClose();
+      }, 1500);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Tip failed.' });
     } finally {
       setLoading(false);
-      setIsOpen(false);
     }
   };
 
   return (
-    <>
-      <Button
-        variant="outline"
-        className="border-blue-400 text-blue-400 hover:bg-blue-900"
-        onClick={() => setIsOpen(true)}
-      >
-        💸 Tip Creator
-      </Button>
-      <Dialog open={isOpen} onClose={() => setIsOpen(false)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/70" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="bg-[#1a1a1a] rounded-lg p-6 border border-gray-700">
-            <Dialog.Title className="text-lg font-bold text-white mb-4">
-              Tip {username}
-            </Dialog.Title>
-            <select
-              className="w-full bg-[#111] border border-gray-600 text-white p-2 rounded mb-4"
-              value={amount}
-              onChange={e => setAmount(Number(e.target.value))}
-            >
-              {[100,300,500,1000,2000].map(v => (
-                <option key={v} value={v}>${v/100}</option>
-              ))}
-            </select>
-            <div className="flex gap-3">
-              <Button
-                onClick={sendTip}
-                disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                {loading ? 'Sending...' : 'Send Tip'}
-              </Button>
-              <Button
-                onClick={() => setIsOpen(false)}
-                variant="outline"
-                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
-              >
-                Cancel
-              </Button>
-            </div>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
-    </>
+    <Dialog open={true} onClose={onClose} className="relative z-50">
+      <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
+        <Dialog.Panel className="bg-[#111] text-white rounded-lg p-6 w-full max-w-sm">
+          <Dialog.Title className="text-lg font-bold mb-4">Tip Creator</Dialog.Title>
+
+          <label className="block mb-2 text-sm">Credits to send</label>
+          <input
+            type="number"
+            value={amount}
+            min={1}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              if (!isNaN(val)) setAmount(val);
+            }}
+            className="w-full p-2 bg-black border border-gray-600 rounded mb-2 text-white"
+          />
+
+          {message && (
+            <p className={`text-sm mb-2 ${message.type === 'error' ? 'text-red-400' : 'text-green-400'}`}>
+              {message.text}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={handleTip} disabled={loading || amount < 1}>
+              {loading ? 'Sending...' : `Send ${amount} Credits`}
+            </Button>
+          </div>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
   );
 }

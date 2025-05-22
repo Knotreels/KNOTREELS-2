@@ -104,6 +104,7 @@ export default function UploadClipModal({
         createdAt: serverTimestamp(),
         views: 0,
         price: priceInCredits,
+        creditsReceived: 0,
       };
 
       const collectionName = mediaType === 'video' ? 'clips' : 'gallery';

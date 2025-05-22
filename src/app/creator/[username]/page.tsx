@@ -1,5 +1,6 @@
 'use client';
 
+import TipModal from '@/components/TipModal';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { db } from '@/firebase/config';
@@ -19,10 +20,10 @@ export default function PublicProfilePage() {
   const [user, setUser] = useState<any>(null);
   const [clips, setClips] = useState<any[]>([]);
   const [gallery, setGallery] = useState<any[]>([]);
+  const [tipImageId, setTipImageId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      // 🔍 Step 1: Find the user by username
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('username', '==', username));
       const userSnap = await getDocs(q);
@@ -33,7 +34,6 @@ export default function PublicProfilePage() {
       const userData = { id: userDoc.id, ...userDoc.data() };
       setUser(userData);
 
-      // 🔍 Step 2: Fetch their clips and images
       const clipsQ = query(
         collection(db, 'clips'),
         where('uid', '==', userDoc.id)
@@ -98,15 +98,34 @@ export default function PublicProfilePage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {gallery.length === 0 && <p className="text-sm text-gray-500">No images yet.</p>}
           {gallery.map(img => (
-            <img
-              key={img.id}
-              src={img.mediaUrl}
-              alt={img.title}
-              className="w-full h-40 object-cover rounded shadow-md"
-            />
+            <div key={img.id} className="bg-black p-2 rounded shadow">
+              <Image
+                src={img.mediaUrl}
+                alt={img.title}
+                width={300}
+                height={300}
+                className="w-full h-40 object-cover rounded"
+              />
+              <div className="mt-2 text-sm text-white">{img.title}</div>
+              <Button
+                onClick={() => setTipImageId(img.id)}
+                className="mt-2 w-full"
+              >
+                Tip Creator
+              </Button>
+            </div>
           ))}
         </div>
       </section>
+
+      {/* Modal for tipping */}
+      {tipImageId && user && (
+        <TipModal
+          imageId={tipImageId}
+          creatorId={user.id}
+          onClose={() => setTipImageId(null)}
+        />
+      )}
     </div>
   );
 }
