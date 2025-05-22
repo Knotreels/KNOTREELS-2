@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import Stripe from 'stripe';
 
-// ✅ Initialize Firebase Admin securely using GOOGLE_CREDENTIALS_JSON
+
   const raw = process.env.GOOGLE_CREDENTIALS_JSON;
 
 
