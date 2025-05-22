@@ -38,33 +38,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         const userRef = doc(db, 'users', firebaseUser.uid);
-
+  
         const stop = onSnapshot(userRef, (docSnap) => {
+          if (!docSnap.exists()) return;
+        
           const data = docSnap.data();
-          if (data) {
-            setUser({
-              ...firebaseUser,
-              username: data.username,
-              avatar: data.avatar,
-              role: data.role,
-              tips: data.tips,
-              boosts: data.boosts,
-              credits: data.credits,
-              bio: data.bio || '',
-            });
-          }
+          setUser({
+            ...firebaseUser,
+            username: data.username,
+            avatar: data.avatar,
+            role: data.role,
+            tips: data.tips,
+            boosts: data.boosts,
+            credits: data.credits,
+            bio: data.bio || '',
+          });
+          setLoading(false); // ✅ Set loading false after data received
         });
-
+        
+  
         return stop;
       } else {
         setUser(null);
+        setLoading(false); // ✅ Also needed here
       }
-
-      setLoading(false);
     });
-
+  
     return () => unsubscribe();
   }, []);
+  
 
   if (loading && !publicRoutes.includes(pathname)) {
     return (
