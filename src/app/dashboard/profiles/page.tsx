@@ -6,8 +6,6 @@ import {
   getDocs,
   doc,
   getDoc,
-  addDoc,
-  serverTimestamp,
 } from 'firebase/firestore';
 import { db, auth } from '@/firebase/config';
 import Image from 'next/image';
@@ -19,47 +17,39 @@ export default function PrivateProfilePage() {
   const [gallery, setGallery] = useState<any[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
+  const fetchUserAndGallery = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+
+    const userData = { id: userSnap.id, ...userSnap.data() };
+    setUser(userData);
+
+    const galleryRef = collection(db, 'gallery');
+    const snapshot = await getDocs(galleryRef);
+    const images = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(img => img.uid === currentUser.uid);
+
+    setGallery(images);
+  };
+
   useEffect(() => {
-    const fetchUserAndGallery = async () => {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
+    fetchUserAndGallery();
 
-      const userRef = doc(db, 'users', currentUser.uid);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) return;
-
-      const userData = { id: userSnap.id, ...userSnap.data() };
-      setUser(userData);
-
-      const galleryRef = collection(db, 'gallery');
-      const snapshot = await getDocs(galleryRef);
-      const images = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
-        .filter(img => img.uid === currentUser.uid);
-
-      setGallery(images);
+    // ✅ Add listener to refresh credits when user returns to tab
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUserAndGallery();
+      }
     };
 
-    fetchUserAndGallery();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
-
-  const handleTip = async (imageId: string) => {
-    try {
-      const res = await fetch('/api/tip', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageId }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Tip failed');
-
-      alert('Thank you for tipping!');
-    } catch (err) {
-      console.error(err);
-      alert('Error tipping');
-    }
-  };
 
   if (!user) return <p className="text-white p-6">Loading...</p>;
 
@@ -103,6 +93,7 @@ export default function PrivateProfilePage() {
           onClose={() => setShowUploadModal(false)}
           onUploaded={() => {
             setShowUploadModal(false);
+            fetchUserAndGallery(); // optional refresh after upload
           }}
         />
       )}
