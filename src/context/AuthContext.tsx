@@ -35,39 +35,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const publicRoutes = ['/checkout/success', '/checkout/cancel'];
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const userRef = doc(db, 'users', firebaseUser.uid);
-  
-        const stop = onSnapshot(userRef, (docSnap) => {
-          if (!docSnap.exists()) return;
-        
-          const data = docSnap.data();
-          setUser({
-            ...firebaseUser,
-            username: data.username || 'Unnamed',
-            avatar: data.avatar || '/default-avatar.png',
-            role: data.role || 'Viewer',
-            tips: data.tips ?? 0,
-            boosts: data.boosts ?? 0,
-            credits: data.credits ?? 0,
-            bio: data.bio || '',
-          });
-          
-          setLoading(false); // ✅ Set loading false after data received
-        });
-        
-  
-        return stop;
-      } else {
-        setUser(null);
-        setLoading(false); // ✅ Also needed here
-      }
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      setLoading(false); // initial auth state settled
     });
-  
-    return () => unsubscribe();
+
+    const currentUser = auth.currentUser;
+    if (!currentUser) return unsubscribe;
+
+    const userRef = doc(db, 'users', currentUser.uid);
+    const stopSnapshot = onSnapshot(userRef, (docSnap) => {
+      if (!docSnap.exists()) return;
+
+      const data = docSnap.data();
+      setUser({
+        ...currentUser,
+        username: data.username || 'Unnamed',
+        avatar: data.avatar || '/default-avatar.png',
+        role: data.role || 'Viewer',
+        tips: data.tips ?? 0,
+        boosts: data.boosts ?? 0,
+        credits: data.credits ?? 0,
+        bio: data.bio || '',
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      stopSnapshot();
+    };
   }, []);
-  
 
   if (loading && !publicRoutes.includes(pathname)) {
     return (
