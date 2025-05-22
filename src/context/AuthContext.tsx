@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { usePathname } from 'next/navigation';
 import { auth, db } from '@/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import LogoLoader from '@/components/LogoLoader';
 
 interface ExtendedUser extends FirebaseUser {
@@ -13,6 +13,7 @@ interface ExtendedUser extends FirebaseUser {
   role?: string;
   tips?: number;
   boosts?: number;
+  credits?: number;
   bio?: string;
 }
 
@@ -31,18 +32,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const pathname = usePathname();
 
-  // ✅ List of routes that should skip the auth loading screen
   const publicRoutes = ['/checkout/success', '/checkout/cancel'];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        try {
-          const userRef = doc(db, 'users', firebaseUser.uid);
-          const userSnap = await getDoc(userRef);
+        const userRef = doc(db, 'users', firebaseUser.uid);
 
-          if (userSnap.exists()) {
-            const data = userSnap.data();
+        const stop = onSnapshot(userRef, (docSnap) => {
+          const data = docSnap.data();
+          if (data) {
             setUser({
               ...firebaseUser,
               username: data.username,
@@ -50,15 +49,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               role: data.role,
               tips: data.tips,
               boosts: data.boosts,
+              credits: data.credits,
               bio: data.bio || '',
             });
-          } else {
-            setUser(firebaseUser as ExtendedUser);
           }
-        } catch (err) {
-          console.error('🔥 Auth merge error:', err);
-          setUser(firebaseUser as ExtendedUser);
-        }
+        });
+
+        return stop;
       } else {
         setUser(null);
       }
@@ -69,7 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  // ✅ Skip auth loading screen on public routes
   if (loading && !publicRoutes.includes(pathname)) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
