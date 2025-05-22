@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/checkout/success`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/checkout/cancel`,
       metadata: {
-        uid: userId,
+        userId,
         credits: creditBundle.credits.toString(),
       },
     };
