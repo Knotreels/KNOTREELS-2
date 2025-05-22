@@ -35,34 +35,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const publicRoutes = ['/checkout/success', '/checkout/cancel'];
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, () => {
-      setLoading(false); // initial auth state settled
-    });
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (!firebaseUser) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
 
-    const currentUser = auth.currentUser;
-    if (!currentUser) return unsubscribe;
+      const userRef = doc(db, 'users', firebaseUser.uid);
+      const stop = onSnapshot(userRef, (docSnap) => {
+        if (!docSnap.exists()) return;
 
-    const userRef = doc(db, 'users', currentUser.uid);
-    const stopSnapshot = onSnapshot(userRef, (docSnap) => {
-      if (!docSnap.exists()) return;
-
-      const data = docSnap.data();
-      setUser({
-        ...currentUser,
-        username: data.username || 'Unnamed',
-        avatar: data.avatar || '/default-avatar.png',
-        role: data.role || 'Viewer',
-        tips: data.tips ?? 0,
-        boosts: data.boosts ?? 0,
-        credits: data.credits ?? 0,
-        bio: data.bio || '',
+        const data = docSnap.data();
+        setUser({
+          ...firebaseUser,
+          username: data.username ?? 'Unnamed',
+          avatar: data.avatar ?? '/default-avatar.png',
+          role: data.role ?? 'Viewer',
+          tips: data.tips ?? 0,
+          boosts: data.boosts ?? 0,
+          credits: data.credits ?? 0,
+          bio: data.bio ?? '',
+        });
+        setLoading(false);
       });
+
+      return stop;
     });
 
-    return () => {
-      unsubscribe();
-      stopSnapshot();
-    };
+    return () => unsubscribe();
   }, []);
 
   if (loading && !publicRoutes.includes(pathname)) {
