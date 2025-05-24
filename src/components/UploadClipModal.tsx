@@ -19,6 +19,15 @@ import { Button } from '@/components/ui/button';
 import { CATEGORIES } from '@/lib/constants';
 import { v4 as uuidv4 } from 'uuid';
 
+// Helper to convert a human-readable category into a URL-friendly slug
+function makeSlug(str: string) {
+  return str
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')      // spaces → hyphens
+    .replace(/[^\w-]/g, '');    // remove non-word chars
+}
+
 const schema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().min(1, 'Description is required'),
@@ -93,11 +102,16 @@ export default function UploadClipModal({
       }
 
       const priceInCredits = parseInt(data.price || '0', 10) || 0;
+
+      // Create a slug from the selected category
+      const categorySlug = makeSlug(data.category);
+
       const listing = {
         title: data.title.trim(),
         description: data.description.trim(),
         mediaUrl: mediaLink,
         category: data.category,
+        categorySlug,          // ← add this field
         uid: auth.currentUser.uid,
         username,
         type: mediaType,
@@ -112,7 +126,10 @@ export default function UploadClipModal({
       await addDoc(collection(db, collectionName), listing);
 
       if (priceInCredits > 0) {
-        const marketRef = await addDoc(collection(db, 'marketplaceItems'), listing);
+        const marketRef = await addDoc(
+          collection(db, 'marketplaceItems'),
+          listing
+        );
         await addDoc(
           collection(db, `users/${auth.currentUser.uid}/shopItems`),
           { ...listing, marketplaceId: marketRef.id }
@@ -208,9 +225,7 @@ export default function UploadClipModal({
                     placeholder="Describe your content"
                   />
                   {errors.description && (
-                    <p className="text-red-400 text-xs">
-                      {errors.description.message}
-                    </p>
+                    <p className="text-red-400 text-xs">{errors.description.message}</p>
                   )}
                 </div>
 

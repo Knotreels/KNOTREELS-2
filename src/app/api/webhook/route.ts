@@ -42,29 +42,29 @@ export async function POST(req: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const uid = session.metadata?.userId;
+    const userId = session.metadata?.userId;
     const credits = Number(session.metadata?.credits);
 
     console.log('✅ Metadata from Stripe session:', session.metadata);
 
-    if (!uid || isNaN(credits)) {
+    if (!userId|| isNaN(credits)) {
       console.warn('⚠️ Missing or invalid metadata:', session.metadata);
       return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
     }
 
-    const userRef = db.collection('users').doc(uid);
+    const userRef = db.collection('users').doc(userId);
 
     try {
       await db.runTransaction(async (tx) => {
         const userSnap = await tx.get(userRef);
 
         if (!userSnap.exists) {
-          throw new Error(`User not found for UID: ${uid}`);
+          throw new Error(`User not found for UID: ${userId}`);
         }
 
         const prevCredits = userSnap.data()?.credits ?? 0;
         tx.update(userRef, { credits: prevCredits + credits });
-        console.log(`🎉 Updated credits for user ${uid}: ${prevCredits} → ${prevCredits + credits}`);
+        console.log(`🎉 Updated credits for user ${userId}: ${prevCredits} → ${prevCredits + credits}`);
       });
 
       return NextResponse.json({ received: true });
